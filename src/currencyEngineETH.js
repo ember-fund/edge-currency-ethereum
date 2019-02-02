@@ -209,7 +209,6 @@ class EthereumEngine {
   async fetchGetEtherscan (cmd: string) {
     let apiKey = ''
     if (global.etherscanApiKey && global.etherscanApiKey.length > 5) {
-      debugger
       apiKey = '&apikey=' + global.etherscanApiKey
     }
     const url = sprintf(
@@ -923,7 +922,6 @@ class EthereumEngine {
   }
 
   async checkAccountNonceFetch (address: string) {
-    debugger
     const url = `?module=proxy&action=eth_getTransactionCount&address=${address}&tag=latest`
     try {
 
@@ -934,7 +932,6 @@ class EthereumEngine {
       const nonce = bns.add('0', jsonObj.result)
       this.log('EtherScan nonce to use: ' + nonce)
       if (valid && this.walletLocalData.nextNonce !== nonce) {
-        debugger
         this.walletLocalData.nextNonce = nonce
         this.walletLocalDataDirty = true
       }
