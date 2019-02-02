@@ -24,7 +24,8 @@ import { bns } from 'biggystring'
 import {
   NetworkFeesSchema,
   CustomTokenSchema,
-  EthGasStationSchema
+  EthGasStationSchema,
+  EtherscanGetAccountNonce
 } from './ethSchema.js'
 import {
   DATA_STORE_FILE,
@@ -49,6 +50,7 @@ const ethWallet = require('../lib/export-fixes-bundle.js').Wallet
 const EthereumTx = require('../lib/export-fixes-bundle.js').Transaction
 
 const ADDRESS_POLL_MILLISECONDS = 3000
+const ACCOUNT_POLL_MILLISECONDS = 20000
 const BLOCKHEIGHT_POLL_MILLISECONDS = 5000
 const NETWORKFEES_POLL_MILLISECONDS = 60 * 10 * 1000 // 10 minutes
 const SAVE_DATASTORE_MILLISECONDS = 10000
@@ -58,6 +60,7 @@ const ADDRESS_QUERY_LOOKBACK_BLOCKS = 4 * 60 * 24 * 7 // ~ one week
 const PRIMARY_CURRENCY = currencyInfo.currencyCode
 const CHECK_UNCONFIRMED = true
 const INFO_SERVERS = ['https://info1.edgesecure.co:8444']
+
 
 type BroadcastResults = {
   incrementNonce: boolean,
@@ -298,9 +301,9 @@ class EthereumEngine {
       // For spends, include the network fee in the transaction amount
       netNativeAmount = bns.sub(netNativeAmount, nativeNetworkFee)
 
-      if (bns.gte(tx.nonce, this.walletLocalData.nextNonce)) {
-        this.walletLocalData.nextNonce = bns.add(tx.nonce, '1')
-      }
+      // if (bns.gte(tx.nonce, this.walletLocalData.nextNonce)) {
+      //   this.walletLocalData.nextNonce = bns.add(tx.nonce, '1')
+      // }
     } else {
       netNativeAmount = bns.add('0', tx.value)
       ourReceiveAddresses.push(
@@ -918,6 +921,35 @@ class EthereumEngine {
     }
   }
 
+  async checkAccountNonceFetch (address: string) {
+    const url = `?module=proxy&action=eth_getTransactionCount&address=${address}&tag=latest`
+    try {
+
+      const jsonObj = await this.fetchGetEtherscan(url)
+
+      this.log('EtherScan Transaction count: ' + JSON.stringify(jsonObj))
+      const valid = validateObject(jsonObj, EtherscanGetAccountNonce)
+      const nonce = bns.add('0', jsonObj.result)
+      this.log('EtherScan nonce to use: ' + nonce)
+      if (valid && this.walletLocalData.nextNonce !== nonce) {
+        this.walletLocalData.nextNonce = nonce
+        this.walletLocalDataDirty = true
+      }
+    } catch (e) {
+      this.log(`Error checking account nonce`, e)
+    }
+  }
+
+  async checkAccountInnerLoop () {
+   const address = this.walletLocalData.ethereumAddress
+   try {
+     // Ethereum only has one address
+     const promiseArray = []
+     promiseArray.push(this.checkAccountNonceFetch(address))
+     await Promise.all(promiseArray)
+   } catch (e) {}
+ }
+
   findTransaction (currencyCode: string, txid: string) {
     if (
       typeof this.walletLocalData.transactionsObj[currencyCode] === 'undefined'
@@ -1114,6 +1146,7 @@ class EthereumEngine {
     this.doInitialCallbacks()
     this.addToLoop('blockHeightInnerLoop', BLOCKHEIGHT_POLL_MILLISECONDS)
     this.addToLoop('checkAddressesInnerLoop', ADDRESS_POLL_MILLISECONDS)
+    this.addToLoop('checkAccountInnerLoop', ACCOUNT_POLL_MILLISECONDS)
     this.addToLoop('saveWalletLoop', SAVE_DATASTORE_MILLISECONDS)
     this.addToLoop('checkUpdateNetworkFees', NETWORKFEES_POLL_MILLISECONDS)
   }
@@ -1591,6 +1624,11 @@ class EthereumEngine {
     // const nonceBN = new BN(this.walletLocalData.nextNonce.toString(10), 10)
     // const nonceHex = '0x' + nonceBN.toString(16)
     //
+
+    if (!this.walletLocalData.nextNonce) {
+      throw new Error('No Nonce in local cache found');
+    }
+
     const nonceHex = toHex(this.walletLocalData.nextNonce)
     let data
     if (edgeTransaction.currencyCode === PRIMARY_CURRENCY) {
@@ -1725,19 +1763,20 @@ class EthereumEngine {
     // Because etherscan will allow use of a nonce that's too high, only use it if Blockcypher fails
     // If we can fix this or replace etherscan, then we can use an array of promises instead of await
     // on each broadcast type
-    try {
-      results[0] = await this.broadcastBlockCypher(edgeTransaction)
-    } catch (e) {
-      errors[0] = e
-    }
+    // try {
+    //   results[0] = await this.broadcastBlockCypher(edgeTransaction)
+    // } catch (e) {
+    //   errors[0] = e
+    // }
 
-    if (errors[0]) {
+    // if (errors[0]) {
       try {
         results[1] = await this.broadcastEtherscan(edgeTransaction)
       } catch (e) {
         errors[1] = e
+        throw e
       }
-    }
+    // }
 
     // Use code below once we actually use a Promise array and simultaneously broadcast with a Promise.all()
     //

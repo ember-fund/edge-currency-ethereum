@@ -24,7 +24,6 @@
     "build:clean": "rimraf lib",
     "build:flow": "flow-copy-source -v -i '**/test/**' src lib",
     "build:test": "rollup -c rollup.config.test.js",
-    "precommit": "npm run build && npm test",
     "flow": "flow status",
     "format": "prettier-eslint --write '*.js' 'src/**/*.js' 'test/**/*.js'",
     "lint": "eslint '*.js' 'src/**/*.js' 'test/**/*.js' && npm run flow",
