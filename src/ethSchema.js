@@ -139,3 +139,13 @@ export const CustomTokenSchema = {
   },
   required: ['currencyCode', 'currencyName', 'multiplier', 'contractAddress']
 }
+
+export const EtherscanGetAccountBalance = {
+  type: 'object',
+  properties: {
+    result: { type: 'string' }
+  },
+  required: ['result']
+}
+
+export const EtherscanGetAccountNonce = EtherscanGetAccountBalance
