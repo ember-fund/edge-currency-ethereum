@@ -1774,7 +1774,6 @@ class EthereumEngine {
         results[1] = await this.broadcastEtherscan(edgeTransaction)
       } catch (e) {
         errors[1] = e
-        throw e
       }
     // }
 
@@ -1792,12 +1791,12 @@ class EthereumEngine {
 
     let allErrored = true
 
-    for (const e of errors) {
-      if (!e) {
-        allErrored = false
-        break
-      }
-    }
+    // for (const e of errors) {
+    //   if (!e) {
+    //     allErrored = false
+    //     break
+    //   }
+    // }
 
     let anyResultIncNonce = false
     let anyResultDecrementNonce = false
@@ -1811,8 +1810,13 @@ class EthereumEngine {
       }
     }
 
-    if (allErrored) {
-      throw errors[0] // Can only throw one error so throw the first one
+    // if (allErrored) {
+    //   throw errors[0] // Can only throw one error so throw the first one
+    // }
+
+    // We got an error from Etherscan and it was not a increment or decrement error
+    if (errors[1] && !anyResultIncNonce && !anyResultDecrementNonce) {
+      throw errors[1]
     }
 
     this.log('broadcastTx errors:', errors)
