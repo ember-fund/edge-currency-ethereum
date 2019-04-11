@@ -1461,6 +1461,9 @@ class EthereumEngine {
       throw new Error('Error: only one output allowed')
     }
 
+    const { txOptions = {} } = edgeSpendInfo
+    const bypassBalanceCheck = txOptions.bypassBalanceCheck ? true : false;
+
     let tokenInfo = {}
     tokenInfo.contractAddress = ''
 
@@ -1556,20 +1559,20 @@ class EthereumEngine {
 
     if (currencyCode === PRIMARY_CURRENCY) {
       totalTxAmount = bns.add(nativeNetworkFee, nativeAmount)
-      if (bns.gt(totalTxAmount, balanceEth)) {
+      if (bns.gt(totalTxAmount, balanceEth) && !bypassBalanceCheck) {
         throw InsufficientFundsError
       }
       nativeAmount = bns.mul(totalTxAmount, '-1')
     } else {
       parentNetworkFee = nativeNetworkFee
 
-      if (bns.gt(nativeNetworkFee, balanceEth)) {
+      if (bns.gt(nativeNetworkFee, balanceEth) && !bypassBalanceCheck) {
         throw InsufficientFundsEthError
       }
 
       nativeNetworkFee = '0' // Do not show a fee for token transations.
       const balanceToken = this.walletLocalData.totalBalances[currencyCode]
-      if (bns.gt(nativeAmount, balanceToken)) {
+      if (bns.gt(nativeAmount, balanceToken) && !bypassBalanceCheck) {
         throw InsufficientFundsError
       }
       nativeAmount = bns.mul(nativeAmount, '-1')
