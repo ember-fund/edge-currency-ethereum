@@ -1142,13 +1142,19 @@ class EthereumEngine {
   }
 
   async startEngine () {
+
     this.engineOn = true
     this.doInitialCallbacks()
-    this.addToLoop('blockHeightInnerLoop', BLOCKHEIGHT_POLL_MILLISECONDS)
-    this.addToLoop('checkAddressesInnerLoop', ADDRESS_POLL_MILLISECONDS)
     this.addToLoop('checkAccountInnerLoop', ACCOUNT_POLL_MILLISECONDS)
-    this.addToLoop('saveWalletLoop', SAVE_DATASTORE_MILLISECONDS)
-    this.addToLoop('checkUpdateNetworkFees', NETWORKFEES_POLL_MILLISECONDS)
+
+    const disableApis = this.currentSettings && this.currentSettings.otherSettings && this.currentSettings.otherSettings.disableApis;
+
+    if (!disableApis) {
+      this.addToLoop('blockHeightInnerLoop', BLOCKHEIGHT_POLL_MILLISECONDS)
+      this.addToLoop('checkAddressesInnerLoop', ADDRESS_POLL_MILLISECONDS)
+      this.addToLoop('saveWalletLoop', SAVE_DATASTORE_MILLISECONDS)
+      this.addToLoop('checkUpdateNetworkFees', NETWORKFEES_POLL_MILLISECONDS)
+    }
   }
 
   async killEngine () {

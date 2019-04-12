@@ -83,6 +83,8 @@ function getParameterByName (param, url) {
 //   }
 // }
 
+export const ethereumCurrencyInfo = currencyInfo
+
 export const ethereumCurrencyPluginFactory: EdgeCurrencyPluginFactory = {
   pluginType: 'currency',
   pluginName: currencyInfo.pluginName,
