@@ -1565,20 +1565,20 @@ class EthereumEngine {
 
     if (currencyCode === PRIMARY_CURRENCY) {
       totalTxAmount = bns.add(nativeNetworkFee, nativeAmount)
-      if (bns.gt(totalTxAmount, balanceEth) && !bypassBalanceCheck) {
+      if (!bypassBalanceCheck && bns.gt(totalTxAmount, balanceEth)) {
         throw InsufficientFundsError
       }
       nativeAmount = bns.mul(totalTxAmount, '-1')
     } else {
       parentNetworkFee = nativeNetworkFee
 
-      if (bns.gt(nativeNetworkFee, balanceEth) && !bypassBalanceCheck) {
+      if (!bypassBalanceCheck && bns.gt(nativeNetworkFee, balanceEth)) {
         throw InsufficientFundsEthError
       }
 
       nativeNetworkFee = '0' // Do not show a fee for token transations.
       const balanceToken = this.walletLocalData.totalBalances[currencyCode]
-      if (bns.gt(nativeAmount, balanceToken) && !bypassBalanceCheck) {
+      if (!bypassBalanceCheck && bns.gt(nativeAmount, balanceToken)) {
         throw InsufficientFundsError
       }
       nativeAmount = bns.mul(nativeAmount, '-1')
